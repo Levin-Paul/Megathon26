@@ -99,7 +99,7 @@ export default function TopBar({
         </div>
 
         {/* STATUS BAR: INGESTION | LAST | RATE | TRACKS | LATENCY | ASTRA | VISION | AUDIT */}
-        <div className="hidden xl:flex items-center space-x-2 bg-aerodark-850 border border-aerodark-700 px-2.5 py-1 rounded-lg text-[11px] font-mono shrink-0">
+        <div className="hidden md:flex items-center space-x-2 bg-aerodark-850 border border-aerodark-700 px-2.5 py-1 rounded-lg text-[11px] font-mono shrink-0">
           {/* INGESTION */}
           <div className="flex items-center space-x-1.5">
             <span className={`w-2 h-2 rounded-full ${statusColorClass}`}></span>
@@ -123,26 +123,26 @@ export default function TopBar({
             <span className="text-slate-400 font-sans">LATENCY:</span>
             <span className="text-blue-300 font-bold">{metrics.latency_ms}ms</span>
           </div>
-          <span className="text-slate-600">|</span>
-          {/* ASTRA */}
-          <div className="flex items-center space-x-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            <span className="text-slate-400 font-sans">ASTRA:</span>
-            <strong className="text-emerald-300 font-mono">99.82%</strong>
-          </div>
-          <span className="text-slate-600">|</span>
-          {/* VISION */}
-          <div className="flex items-center space-x-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-            <span className="text-slate-400 font-sans">VISION:</span>
-            <strong className="text-slate-300 font-mono">SIMULATION</strong>
-          </div>
-          <span className="text-slate-600">|</span>
-          {/* AUDIT */}
-          <div className="flex items-center space-x-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            <span className="text-slate-400 font-sans">AUDIT:</span>
-            <strong className="text-emerald-300 font-mono">SHA-256 VALID</strong>
+          {/* ASTRA | VISION | AUDIT */}
+          <div className="hidden lg:flex items-center space-x-2">
+            <span className="text-slate-600">|</span>
+            <div className="flex items-center space-x-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span className="text-slate-400 font-sans">ASTRA:</span>
+              <strong className="text-emerald-300 font-mono">99.82%</strong>
+            </div>
+            <span className="text-slate-600">|</span>
+            <div className="flex items-center space-x-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              <span className="text-slate-400 font-sans">VISION:</span>
+              <strong className="text-slate-300 font-mono">SIMULATION</strong>
+            </div>
+            <span className="text-slate-600">|</span>
+            <div className="flex items-center space-x-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span className="text-slate-400 font-sans">AUDIT:</span>
+              <strong className="text-emerald-300 font-mono">SHA-256 VALID</strong>
+            </div>
           </div>
         </div>
       </div>
