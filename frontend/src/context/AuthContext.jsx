@@ -1,0 +1,134 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+const AuthContext = createContext(null);
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('aeroguard_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('aeroguard_token') || null);
+  const [loading, setLoading] = useState(true);
+
+  // Verify active session with backend /api/auth/me on mount
+  useEffect(() => {
+    const verifySession = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch('http://127.0.0.1:5000/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && data.user) {
+            setUser(data.user);
+            localStorage.setItem('aeroguard_user', JSON.stringify(data.user));
+          } else {
+            handleLogoutClean();
+          }
+        } else {
+          handleLogoutClean();
+        }
+      } catch (err) {
+        console.warn('[AuthContext] Backend check unreachable, preserving existing session offline fallback:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifySession();
+  }, [token]);
+
+  const handleLogoutClean = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('aeroguard_token');
+    localStorage.removeItem('aeroguard_user');
+  };
+
+  const login = async (username, password, portal) => {
+    try {
+      const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, portal })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, message: data.message || 'Authentication failed' };
+      }
+
+      setUser(data.user);
+      setToken(data.token);
+      localStorage.setItem('aeroguard_token', data.token);
+      localStorage.setItem('aeroguard_user', JSON.stringify(data.user));
+
+      return { success: true, user: data.user, token: data.token };
+    } catch (err) {
+      return { success: false, message: 'Server connection error. Please ensure backend is running.' };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      if (token) {
+        await fetch('http://127.0.0.1:5000/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
+    } catch (err) {
+      console.error('[AuthContext] Logout sync error:', err);
+    } finally {
+      handleLogoutClean();
+    }
+  };
+
+  const registerOperator = async (formData) => {
+    try {
+      const res = await fetch('http://127.0.0.1:5000/api/auth/register-operator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      return { success: false, message: 'Registration request failed. Server connection error.' };
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        role: user?.role || null,
+        isAuthenticated: !!user && !!token,
+        loading,
+        login,
+        logout,
+        registerOperator
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

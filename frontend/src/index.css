@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-aerodark-950 text-slate-100 font-sans;
+    background-color: #0B1220;
+    color: #F1F5F9;
+  }
+}
+
+/* Custom Tactical Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #0B1220;
+}
+::-webkit-scrollbar-thumb {
+  background: #263449;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #33435C;
+}
+
+/* Realistic Radar Sweep Animation */
+@keyframes radar-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-radar-sweep {
+  animation: radar-sweep 3.5s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+/* Subtle pulse animation for active target blip */
+@keyframes target-ping {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.9;
+  }
+}
+
+.animate-target-ping {
+  animation: target-ping 1.8s cubic-bezier(0.1, 0.7, 0.3, 1) infinite;
+}
+
+@keyframes radar-ring-expand {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.0);
+    opacity: 0;
+  }
+}
+
+.animate-ring-expand {
+  animation: radar-ring-expand 2.2s cubic-bezier(0.1, 0.7, 0.3, 1) infinite;
+}
+
+@keyframes radar-ring-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-ring-rotate {
+  animation: radar-ring-rotate 10s linear infinite;
+}
+
+/* Leaflet Map styling for government surveillance theme */
+.leaflet-container {
+  background: #0B1220 !important;
+  font-family: 'Inter', sans-serif !important;
+  outline: none;
+}
+
+.dark-tiles {
+  filter: invert(100%) hue-rotate(185deg) brightness(85%) contrast(90%);
+}
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: #151E2E !important;
+  color: #F1F5F9 !important;
+  border: 1px solid #263449 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+@keyframes shrink-width {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.animate-shrink-width {
+  animation: shrink-width 2s linear forwards;
+}
