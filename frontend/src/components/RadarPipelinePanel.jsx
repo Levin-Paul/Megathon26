@@ -88,9 +88,10 @@ export default function RadarPipelinePanel({ currentTrack, demoSamples, onClassi
           <button
             onClick={onOpenRadar}
             className="flex items-center space-x-1.5 bg-aerodark-800 hover:bg-aerodark-750 text-slate-200 hover:text-white border border-aerodark-700 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all shadow-sm cursor-pointer"
-            title="Pop out full tactical radar window with electronic SIGINT"
+            title="Expand into full tactical PPI radar scope and electronic SIGINT window"
           >
-            <span>⛶ POP-OUT RADAR</span>
+            <Radar className="w-3 h-3 text-blue-400" />
+            <span>EXPAND RADAR</span>
           </button>
           <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] px-2 py-0.5 rounded font-semibold">
             ACCURACY: 99.82%

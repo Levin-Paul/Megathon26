@@ -43,9 +43,14 @@ export default function AdminDashboardPage() {
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [pinnedTarget, setPinnedTarget] = useState(null);
 
-  // Pop-Out Tactical Radar & Audio
+  // Pop-Out Tactical Radar, Audio & Notification History
   const [isRadarModalOpen, setIsRadarModalOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [notificationHistory, setNotificationHistory] = useState([]);
+
+  const handleAddNotification = (newToast) => {
+    setNotificationHistory((prev) => [newToast, ...prev.slice(0, 49)]);
+  };
 
   // Demo Walkthrough State
   const [isDemoRunning, setIsDemoRunning] = useState(false);
@@ -343,6 +348,10 @@ export default function AdminDashboardPage() {
         currentRole={currentRole}
         threatMood={threatMood}
         onOpenRadar={() => setIsRadarModalOpen(true)}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+        notificationHistory={notificationHistory}
+        onClearHistory={() => setNotificationHistory([])}
         user={user}
         onLogout={handleLogout}
       />
@@ -709,7 +718,7 @@ export default function AdminDashboardPage() {
         }}
         onOpenRadar={() => setIsRadarModalOpen(true)}
         soundEnabled={soundEnabled}
-        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+        onAddNotification={handleAddNotification}
       />
 
       {/* Pop-Out Tactical PPI Radar Scope & Electronic SIGINT Spectrum Window Modal */}
@@ -718,6 +727,9 @@ export default function AdminDashboardPage() {
         onClose={() => setIsRadarModalOpen(false)}
         currentTrack={currentTrack}
         historyTrail={historyTrail}
+        zones={zones}
+        cameras={cameras}
+        tracks={simSnapshot?.tracks || (currentTrack ? [currentTrack] : [])}
         soundEnabled={soundEnabled}
         onToggleSound={() => setSoundEnabled(!soundEnabled)}
         onPinTarget={(trk) => {

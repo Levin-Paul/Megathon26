@@ -7,12 +7,7 @@ import {
   Wifi, 
   Activity, 
   Crosshair, 
-  X, 
-  Volume2, 
-  VolumeX, 
-  ExternalLink,
-  ChevronDown,
-  ChevronUp
+  X
 } from 'lucide-react';
 
 // Web Audio API tactical sound synthesizer
@@ -70,11 +65,9 @@ export default function NotificationToasts({
   onPinTarget, 
   onOpenRadar,
   soundEnabled = true,
-  onToggleSound 
+  onAddNotification
 }) {
   const [toasts, setToasts] = useState([]);
-  const [history, setHistory] = useState([]);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const lastTrackIdRef = useRef(null);
   const lastRfFreqRef = useRef(null);
   const lastGeofenceRef = useRef(null);
@@ -89,7 +82,9 @@ export default function NotificationToasts({
     };
 
     setToasts((prev) => [newToast, ...prev.slice(0, 3)]);
-    setHistory((prev) => [newToast, ...prev.slice(0, 24)]);
+    if (onAddNotification) {
+      onAddNotification(newToast);
+    }
 
     // Notification automatically disappears in 2 seconds once popped up
     setTimeout(() => {
@@ -211,44 +206,7 @@ export default function NotificationToasts({
   }, [toasts]);
 
   return (
-    <div className="fixed top-14 right-4 z-50 flex flex-col items-end space-y-2.5 max-w-sm w-full pointer-events-none select-none">
-      {/* Sound & Pop-out Radar Quick Bar */}
-      <div className="flex items-center space-x-2 pointer-events-auto bg-aerodark-900/95 backdrop-blur-md border border-aerodark-700 px-3 py-1.5 rounded-full shadow-lg text-xs font-sans text-slate-300">
-        <button
-          onClick={onToggleSound}
-          className={`flex items-center space-x-1 px-2 py-0.5 rounded-md transition-colors ${
-            soundEnabled ? 'text-blue-400 bg-blue-600/15' : 'text-slate-500 hover:text-slate-300'
-          }`}
-          title={soundEnabled ? 'Mute tactical audio' : 'Enable tactical audio pings'}
-        >
-          {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-          <span className="font-mono text-[10px]">{soundEnabled ? 'AUDIO ON' : 'MUTED'}</span>
-        </button>
-
-        <span className="text-aerodark-700">|</span>
-
-        <button
-          onClick={onOpenRadar}
-          className="flex items-center space-x-1 text-blue-300 hover:text-white px-2.5 py-0.5 rounded-md bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/30 transition-all cursor-pointer font-medium text-xs"
-        >
-          <Radar className="w-3.5 h-3.5 text-blue-400" />
-          <span>POP-OUT RADAR</span>
-        </button>
-
-        {history.length > 0 && (
-          <>
-            <span className="text-aerodark-700">|</span>
-            <button
-              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-              className="flex items-center space-x-1 text-slate-400 hover:text-slate-200 transition-colors text-xs font-medium"
-            >
-              <span>LOG ({history.length})</span>
-              {isDrawerOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
-          </>
-        )}
-      </div>
-
+    <div className="fixed top-16 right-4 z-45 flex flex-col items-end space-y-2.5 max-w-sm w-full pointer-events-none select-none">
       {/* Active Toast Stack */}
       <div className="flex flex-col space-y-2.5 w-full">
         {toasts.map((toast) => {
@@ -302,7 +260,7 @@ export default function NotificationToasts({
                   <span className="text-[10px] font-mono text-slate-400">{toast.timestamp}</span>
                   <button
                     onClick={() => removeToast(toast.id)}
-                    className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-aerodark-800 transition-colors"
+                    className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-aerodark-800 transition-colors cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -349,30 +307,6 @@ export default function NotificationToasts({
           );
         })}
       </div>
-
-      {/* Collapsible History Drawer */}
-      {isDrawerOpen && history.length > 0 && (
-        <div className="pointer-events-auto w-full max-h-60 overflow-y-auto bg-aerodark-900 border border-aerodark-700 rounded-xl shadow-2xl p-3 font-mono text-xs space-y-2 backdrop-blur-md">
-          <div className="flex items-center justify-between pb-1.5 border-b border-aerodark-700 text-slate-400 uppercase font-semibold text-[10px]">
-            <span>NOTIFICATION LOG ({history.length})</span>
-            <button
-              onClick={() => setHistory([])}
-              className="text-red-400 hover:underline text-[10px]"
-            >
-              CLEAR
-            </button>
-          </div>
-          {history.map((h, i) => (
-            <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-aerodark-850 border border-aerodark-700/70 text-slate-300 hover:border-blue-500/40">
-              <div>
-                <div className="font-semibold text-slate-200 text-xs">{h.title}</div>
-                <div className="text-slate-400 text-[10px] font-sans">{h.subtitle}</div>
-              </div>
-              <span className="text-slate-400 text-[10px] shrink-0 ml-2">{h.timestamp}</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
