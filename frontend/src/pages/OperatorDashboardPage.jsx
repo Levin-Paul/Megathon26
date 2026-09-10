@@ -52,9 +52,9 @@ export default function OperatorDashboardPage() {
   const fetchData = async () => {
     try {
       const [dRes, pRes, zRes] = await Promise.all([
-        fetch('http://127.0.0.1:5000/api/drones'),
-        fetch('http://127.0.0.1:5000/api/permissions'),
-        fetch('http://127.0.0.1:5000/api/zones')
+        fetch('/api/drones'),
+        fetch('/api/permissions'),
+        fetch('/api/zones')
       ]);
       const [dData, pData, zData] = await Promise.all([
         dRes.json(),
@@ -87,7 +87,7 @@ export default function OperatorDashboardPage() {
     e.preventDefault();
     if (!newModel || !newOwner) return;
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/drones', {
+      const res = await fetch('/api/drones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,7 +117,7 @@ export default function OperatorDashboardPage() {
     e.preventDefault();
     if (!permDroneId || !permPurpose) return;
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/permissions', {
+      const res = await fetch('/api/permissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

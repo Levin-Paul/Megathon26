@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       try {
-        const res = await fetch('http://127.0.0.1:5000/api/auth/me', {
+        const res = await fetch('/api/auth/me', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password, portal) => {
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password, portal })
@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       if (token) {
-        await fetch('http://127.0.0.1:5000/api/auth/logout', {
+        await fetch('/api/auth/logout', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }) => {
 
   const registerOperator = async (formData) => {
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/auth/register-operator', {
+      const res = await fetch('/api/auth/register-operator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

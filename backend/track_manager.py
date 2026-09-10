@@ -282,6 +282,8 @@ class TrackManager:
 
     def _persist_track_update(self, t: Dict[str, Any], ingest_ts: float, processing_ts: float, raw_report: Dict[str, Any]):
         try:
+            is_new_alert = False
+            alert_id = None
             conn = get_db()
             cursor = conn.cursor()
 

@@ -14,13 +14,13 @@ import {
   Settings
 } from 'lucide-react';
 
-export default function Navigation({ currentTab, setTab, alertCount, incidentCount }) {
+export default function Navigation({ currentTab, setTab, alertCount, incidentCount, pendingPermCount = 0 }) {
   const navItems = [
     { id: 'overview', label: 'Live Surveillance', icon: LayoutDashboard, badge: null },
     { id: 'radar', label: 'Radar AI Pipeline', icon: Radar, badge: '99.8%' },
     { id: 'camera', label: 'Camera & YOLO', icon: Camera, badge: null },
     { id: 'tracks', label: 'Unified Tracks', icon: Crosshair, badge: 'LIVE' },
-    { id: 'permissions', label: 'Flight Permissions', icon: FileCheck2, badge: null },
+    { id: 'permissions', label: 'Flight Approvals & Permissions', icon: FileCheck2, badge: pendingPermCount > 0 ? `${pendingPermCount} PENDING` : null, alertColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/30' },
     { id: 'registry', label: 'Drone Registry', icon: Plane, badge: null },
     { id: 'zones', label: 'Restricted Zones', icon: ShieldAlert, badge: '3' },
     { id: 'alerts', label: 'Alert Center', icon: BellRing, badge: alertCount > 0 ? alertCount : null, alertColor: 'bg-red-500/20 text-red-300 border border-red-500/30' },

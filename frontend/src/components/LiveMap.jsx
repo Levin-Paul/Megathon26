@@ -245,11 +245,12 @@ export default function LiveMap({
         description: `Temporary tactical restriction active for ${zoneDuration}s`
       };
 
-      const res = await fetch('http://127.0.0.1:5000/api/zones', {
+      const token = localStorage.getItem('aeroguard_token') || 'aerosec-officer-token';
+      const res = await fetch('/api/zones', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer aerosec-officer-token'
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(payload)
       });
@@ -649,7 +650,7 @@ export default function LiveMap({
   }, [track, tracks, autoTrack, historyTrail]);
 
   return (
-    <div className="relative w-full h-full bg-aerodark-950 overflow-hidden font-sans select-none">
+    <div className="relative w-full h-full bg-aerodark-950 overflow-hidden font-sans select-none isolate z-0">
       {/* Map DOM Canvas */}
       <div ref={mapContainerRef} className="w-full h-full" style={{ background: '#0B1120' }} />
 

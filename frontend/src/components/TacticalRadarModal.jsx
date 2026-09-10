@@ -318,7 +318,7 @@ export default function TacticalRadarModal({
   // Minimized Floating Pill
   if (isMinimized) {
     return (
-      <div className="fixed bottom-4 right-4 z-50 flex items-center space-x-3 bg-aerodark-900/95 border border-aerodark-700 p-2.5 rounded-xl shadow-xl backdrop-blur-md font-mono text-xs select-none">
+      <div className="fixed bottom-4 right-4 z-[9999] flex items-center space-x-3 bg-aerodark-900/95 border border-aerodark-700 p-2.5 rounded-xl shadow-xl backdrop-blur-md font-mono text-xs select-none">
         <div className="relative w-9 h-9 rounded-full border border-aerodark-700 bg-aerodark-950 flex items-center justify-center overflow-hidden shrink-0">
           <div 
             className="absolute inset-0 rounded-full animate-radar-sweep origin-center pointer-events-none"
@@ -358,7 +358,7 @@ export default function TacticalRadarModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm select-none animate-in fade-in-50 duration-200">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm select-none animate-in fade-in-50 duration-200">
       {/* Main Centered Radar Scope Window Card */}
       <div 
         style={{

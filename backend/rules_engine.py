@@ -9,8 +9,17 @@ class RulesEngine:
     def __init__(self):
         pass
 
-    def check_authorization(self, track_id: str, uas_id: str, object_type: str,
-                            current_lat: float, current_lon: float, altitude_m: float) -> dict:
+    def check_authorization(self, track_id: str, uas_id: Any = None, object_type: Any = "DRONE",
+                            current_lat: float = 0.0, current_lon: float = 0.0, altitude_m: Optional[float] = None, **kwargs) -> dict:
+        # Backward compatibility for 5-argument calls: (track_id, object_type, lat, lon, alt)
+        if altitude_m is None and isinstance(current_lon, (int, float)) and isinstance(object_type, (int, float)):
+            altitude_m = float(current_lon)
+            current_lon = float(current_lat)
+            current_lat = float(object_type)
+            object_type = str(uas_id) if uas_id else "DRONE"
+            uas_id = None
+        elif altitude_m is None:
+            altitude_m = 0.0
         """
         Rigorous 7-Point DGCA DigitalSky Authorization Validation:
         1. UAS exists in registry

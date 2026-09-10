@@ -444,6 +444,36 @@ def alert_disposition(alert_id):
 
     return jsonify({"success": True, "message": msg, "audit_entry": audit_rec})
 
+@app.route("/api/alerts/<alert_id>/action", methods=["POST"])
+def alert_action(alert_id):
+    data = request.json or {}
+    action = (data.get("action") or "ACKNOWLEDGE").strip().upper()
+    officer = data.get("officer") or "Inspector V. Raman"
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM alerts WHERE alert_id = ?", (alert_id,))
+    alt = cursor.fetchone()
+    if not alt:
+        conn.close()
+        return jsonify({"success": False, "error": "Alert not found"}), 404
+
+    new_status = "RESOLVED" if action in ["DISMISS", "CLOSE", "RESOLVE"] else "ACKNOWLEDGED"
+    cursor.execute("UPDATE alerts SET status = ? WHERE alert_id = ?", (new_status, alert_id))
+    conn.commit()
+    conn.close()
+
+    try:
+        audit_service.log_event(
+            event_type="ALERT_ACTION",
+            details=f"Alert {alert_id} marked {new_status} via action {action} by {officer}",
+            operator=officer,
+            severity="INFO"
+        )
+    except Exception:
+        pass
+    return jsonify({"success": True, "message": f"Alert {alert_id} updated to {new_status}"})
+
 # ----------------- AUDIT LEDGER, VERIFICATION & EXPORT -----------------
 @app.route("/api/audit", methods=["GET"])
 def get_audit_logs():
@@ -605,9 +635,15 @@ def stream_events():
 # ----------------- SIMULATION & SCENARIOS -----------------
 @app.route("/api/scenarios", methods=["GET"])
 def get_scenarios():
+    seen = set()
+    unique = []
+    for s in SCENARIOS.values():
+        if s["id"] not in seen:
+            seen.add(s["id"])
+            unique.append(s)
     return jsonify({
         "success": True,
-        "scenarios": list(SCENARIOS.values()),
+        "scenarios": unique,
         "active_scenario_key": simulation_engine.active_scenario_key
     })
 
@@ -749,6 +785,35 @@ def register_drone():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
+@app.route("/api/drones/verify/<uin>", methods=["GET"])
+def verify_drone(uin):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM drones WHERE uin_number = ? COLLATE NOCASE", (uin.strip(),))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({
+            "success": False,
+            "registered": False,
+            "error": f"Drone with UIN '{uin}' is not registered in the National Registry."
+        }), 404
+    drone = dict(row)
+    cursor.execute("""
+        SELECT * FROM flight_permissions
+        WHERE drone_id = ? AND status = 'APPROVED'
+        AND CURRENT_TIMESTAMP BETWEEN start_time AND end_time
+    """, (drone["drone_id"],))
+    perm = cursor.fetchone()
+    conn.close()
+    return jsonify({
+        "success": True,
+        "registered": True,
+        "drone": drone,
+        "has_active_permission": perm is not None,
+        "active_permission": dict(perm) if perm else None
+    })
+
 @app.route("/api/permissions", methods=["GET"])
 def get_permissions():
     conn = get_db()
@@ -771,17 +836,21 @@ def request_permission():
         conn = get_db()
         cursor = conn.cursor()
         perm_id = f"PERM-2026-{int(time.time()) % 10000:04d}"
+        initial_status = data.get("status", "PENDING").upper()
+        approver = "Officer V. Raman" if initial_status == "APPROVED" else None
         cursor.execute("""
             INSERT INTO flight_permissions 
             (permission_id, drone_id, operator_name, flight_purpose, allowed_zone, start_time, end_time, max_altitude_m, status, approved_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'APPROVED', 'Officer V. Raman')
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            perm_id, data.get("drone_id", "DRN-001"), user["username"],
+            perm_id, data.get("drone_id", "DRN-001"), data.get("operator_name") or user["username"],
             data.get("flight_purpose", "Aerial Photography / Survey"),
             data.get("allowed_zone", "ZONE-PORT-02"),
             data.get("start_time", "2026-09-10 00:00:00"),
             data.get("end_time", "2026-09-15 23:59:59"),
-            float(data.get("max_altitude_m", 80.0))
+            float(data.get("max_altitude_m", 80.0)),
+            initial_status,
+            approver
         ))
         conn.commit()
         conn.close()
@@ -792,13 +861,47 @@ def request_permission():
             action="REQUEST_FLIGHT_PERMISSION",
             resource_type="PERMISSION",
             resource_id=perm_id,
-            result="APPROVED",
+            result=initial_status,
             reason_code="DGCA_STANDARD_CORRIDOR",
-            details=f"Permit {perm_id} issued for drone {data.get('drone_id')} in {data.get('allowed_zone')}"
+            details=f"Permit request {perm_id} submitted for drone {data.get('drone_id')} in {data.get('allowed_zone')} (Status: {initial_status})"
         )
-        return jsonify({"success": True, "permission_id": perm_id})
+        return jsonify({"success": True, "permission_id": perm_id, "status": initial_status})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
+
+@app.route("/api/permissions/<perm_id>/status", methods=["PUT"])
+def update_permission_status(perm_id):
+    user = get_current_user() or {"username": "officer.raman", "role": "OFFICER"}
+    data = request.json or {}
+    new_status = data.get("status", "APPROVED").upper()
+    officer = data.get("officer", user.get("username", "Law Enforcement Officer"))
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM flight_permissions WHERE permission_id = ?", (perm_id,))
+    perm = cursor.fetchone()
+    if not perm:
+        conn.close()
+        return jsonify({"success": False, "error": "Permission record not found"}), 404
+
+    cursor.execute("""
+        UPDATE flight_permissions
+        SET status = ?, approved_by = ?
+        WHERE permission_id = ?
+    """, (new_status, officer, perm_id))
+    conn.commit()
+    conn.close()
+
+    audit_service.log_event(
+        operator_id=officer,
+        operator_role="OFFICER",
+        action=f"PERMISSION_{new_status}",
+        resource_type="PERMISSION",
+        resource_id=perm_id,
+        result="SUCCESS",
+        reason_code="OPERATOR_REQUEST_ADJUDICATED",
+        details=f"Permission {perm_id} status changed to {new_status} by {officer}"
+    )
+    return jsonify({"success": True, "permission_id": perm_id, "status": new_status})
 
 @app.route("/api/incidents", methods=["GET"])
 def get_incidents():
@@ -809,7 +912,7 @@ def get_incidents():
     conn.close()
     return jsonify({"success": True, "incidents": rows})
 
-@app.route("/api/incidents/<inc_id>", methods=["GET"])
+@app.route("/api/incidents/<inc_id>", methods=["GET", "PUT"])
 def get_incident_detail(inc_id):
     conn = get_db()
     cursor = conn.cursor()
@@ -818,6 +921,44 @@ def get_incident_detail(inc_id):
     if not inc:
         conn.close()
         return jsonify({"success": False, "error": "Incident not found"}), 404
+
+    if request.method == "PUT":
+        data = request.json or {}
+        new_status = data.get("status", inc["status"])
+        notes = data.get("notes")
+        assigned_officer = data.get("assigned_officer", inc["assigned_officer"])
+        summary = data.get("summary", inc["summary"])
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        combined_notes = inc["notes"] or ""
+        if notes:
+            if combined_notes:
+                combined_notes += f"\n[{now_iso}] {notes}"
+            else:
+                combined_notes = f"[{now_iso}] {notes}"
+
+        cursor.execute("""
+            UPDATE incidents
+            SET status = ?, notes = ?, assigned_officer = ?, summary = ?, updated_at = ?
+            WHERE incident_id = ?
+        """, (new_status, combined_notes, assigned_officer, summary, now_iso, inc_id))
+        conn.commit()
+
+        audit_service.log_event(
+            operator_id=assigned_officer or "officer.raman",
+            operator_role="OFFICER",
+            action="UPDATE_INCIDENT",
+            resource_type="INCIDENT",
+            resource_id=inc_id,
+            result="SUCCESS",
+            reason_code="STATUS_UPDATE",
+            details=f"Status: {new_status}, Updated notes: {bool(notes)}"
+        )
+
+        cursor.execute("SELECT * FROM incidents WHERE incident_id = ?", (inc_id,))
+        updated = dict(cursor.fetchone())
+        conn.close()
+        return jsonify({"success": True, "incident": updated, "message": "Incident updated successfully"})
 
     cursor.execute("SELECT * FROM evidence WHERE incident_id = ? ORDER BY timestamp ASC", (inc_id,))
     evidence_rows = [dict(e) for e in cursor.fetchall()]

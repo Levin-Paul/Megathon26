@@ -120,6 +120,21 @@ SCENARIOS = {
         "speed_mps": 12.0,
         "heading_deg": 45.0,
         "description": "Simultaneous multi-target tracking: Authorized commercial UAV, unregistered drone, and out-of-envelope drone."
+    },
+    "RESTRICTED_INTRUSION": {
+        "id": "RESTRICTED_INTRUSION",
+        "name": "8. Restricted Sector Incursion (Naval Airspace)",
+        "track_id": "TRACK-0001",
+        "uas_id": "UNKNOWN-UAS-001",
+        "object_type": "DRONE",
+        "start_lat": 13.060,
+        "start_lon": 80.290,
+        "target_lat": 13.072,
+        "target_lon": 80.302,
+        "altitude_m": 88.0,
+        "speed_mps": 18.0,
+        "heading_deg": 38.0,
+        "description": "Unregistered drone incursion penetrating INS Adyar Naval Base Restricted Airspace (0-1200m AGL)."
     }
 }
 

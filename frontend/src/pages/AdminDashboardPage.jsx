@@ -17,6 +17,7 @@ import RestrictedZonesView from '../components/RestrictedZonesView';
 import DemoWalkthroughModal from '../components/DemoWalkthroughModal';
 import TacticalRadarModal from '../components/TacticalRadarModal';
 import NotificationToasts from '../components/NotificationToasts';
+import { Clock, ChevronRight, FileCheck2 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
@@ -297,6 +298,24 @@ export default function AdminDashboardPage() {
     }).then(() => fetch('/api/zones').then((r) => r.json()).then((d) => d?.zones && setZones(d.zones)));
   };
 
+  const handleImportGeoJSON = async (parsedGeoJSON) => {
+    const token = localStorage.getItem('aeroguard_token') || 'aerosec-admin-token';
+    const res = await fetch('/api/zones/import-geojson', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(parsedGeoJSON)
+    });
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to import GeoJSON');
+    }
+    await fetchAllData();
+    return data;
+  };
+
   const handleUpdateIncident = (incId, updateData) => {
     fetch(`/api/incidents/${incId}`, {
       method: 'PUT',
@@ -364,6 +383,7 @@ export default function AdminDashboardPage() {
           setTab={setTab}
           alertCount={alerts?.filter((a) => a.status === 'ACTIVE').length || 0}
           incidentCount={incidents?.filter((i) => i.status === 'OPEN').length || 0}
+          pendingPermCount={permissions?.filter((p) => p.status === 'PENDING').length || 0}
         />
 
         {/* View Content Area with Dynamic Atmospheric Perimeter Mood */}
@@ -442,6 +462,25 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
+              {/* Incoming Flight Approval Notification Strip */}
+              {permissions?.filter((p) => p.status === 'PENDING').length > 0 && (
+                <div className="shrink-0 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center justify-between text-xs text-amber-200 shadow-sm animate-fadeIn">
+                  <div className="flex items-center space-x-2.5">
+                    <Clock className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
+                    <span>
+                      <strong className="text-amber-300 font-semibold">{permissions.filter((p) => p.status === 'PENDING').length} Civilian Drone Flight Request(s)</strong> awaiting law enforcement adjudication.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setTab('permissions')}
+                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-2.5 py-1 rounded-md text-[11px] transition-all shadow-sm flex items-center space-x-1"
+                  >
+                    <span>REQUEST APPROVAL</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
               {/* Simulation Controls Top Strip */}
               <SimulationControls
                 simState={simSnapshot?.state || 'STOPPED'}
@@ -463,7 +502,7 @@ export default function AdminDashboardPage() {
               {/* Upper Section: Live Map & Live Detection Card */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-2.5 flex-1 min-h-[340px] overflow-hidden">
                 {/* Left 2 Cols: Leaflet OpenStreetMap */}
-                <div className="lg:col-span-2 h-full rounded-xl border border-aerodark-700 overflow-hidden shadow-sm bg-aerodark-850 flex flex-col">
+                <div className="lg:col-span-2 h-full rounded-xl border border-aerodark-700 overflow-hidden shadow-sm bg-aerodark-850 flex flex-col relative z-0 isolate">
                   {/* Multi-object track selector bar if multiple tracks */}
                   {simSnapshot?.tracks && simSnapshot.tracks.length > 1 && (
                     <div className="bg-aerodark-900/90 border-b border-aerodark-700 px-3 py-1.5 flex items-center space-x-2 text-xs overflow-x-auto shrink-0">
@@ -486,7 +525,7 @@ export default function AdminDashboardPage() {
                       })}
                     </div>
                   )}
-                  <div className="flex-1 relative overflow-hidden">
+                  <div className="flex-1 relative overflow-hidden isolate z-0">
                     <LiveMap
                       track={selectedTrack || currentTrack}
                       tracks={simSnapshot?.active_tracks || simSnapshot?.tracks || (currentTrack ? [currentTrack] : [])}
@@ -606,24 +645,40 @@ export default function AdminDashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="text-slate-300 divide-y divide-aerodark-700/40">
-                      <tr className="hover:bg-aerodark-800/50 transition-colors">
-                        <td className="px-3.5 py-2.5 font-bold text-blue-400">{currentTrack?.track_id || 'TRACK-0001'}</td>
-                        <td className="px-3.5 py-2.5 text-slate-200 font-sans font-medium">{currentTrack?.object_type || 'DRONE'}</td>
-                        <td className="px-3.5 py-2.5 text-emerald-400 font-medium">{((currentTrack?.radar_confidence || 0.96) * 100).toFixed(1)}%</td>
-                        <td className="px-3.5 py-2.5 text-slate-300">{currentTrack?.altitude_m || 88}m</td>
-                        <td className="px-3.5 py-2.5 text-slate-300">{currentTrack?.speed_mps || 18} m/s</td>
-                        <td className="px-3.5 py-2.5 text-slate-300">{currentTrack?.heading_deg || 12}°</td>
-                        <td className="px-3.5 py-2.5">
-                          <span className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md font-sans font-medium text-[10px]">
-                            {currentTrack?.fusion?.display_status || 'CORRELATED'}
-                          </span>
-                        </td>
-                        <td className="px-3.5 py-2.5">
-                          <span className="bg-red-500/15 border border-red-500/30 text-red-300 px-2 py-0.5 rounded-md font-sans font-medium text-[10px]">
-                            {currentTrack?.risk?.level || 'CRITICAL'}
-                          </span>
-                        </td>
-                      </tr>
+                      {((simSnapshot?.tracks && simSnapshot.tracks.length > 0) ? simSnapshot.tracks : (currentTrack ? [currentTrack] : [])).length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="px-3.5 py-6 text-center text-slate-500 font-sans">
+                            No active airspace tracks detected in primary radar sweep sector.
+                          </td>
+                        </tr>
+                      ) : (
+                        ((simSnapshot?.tracks && simSnapshot.tracks.length > 0) ? simSnapshot.tracks : (currentTrack ? [currentTrack] : [])).map((tr) => (
+                          <tr key={tr.track_id} className="hover:bg-aerodark-800/50 transition-colors">
+                            <td className="px-3.5 py-2.5 font-bold text-blue-400">{tr.track_id}</td>
+                            <td className="px-3.5 py-2.5 text-slate-200 font-sans font-medium">{tr.object_type || 'DRONE'}</td>
+                            <td className="px-3.5 py-2.5 text-emerald-400 font-medium">{(((tr.radar_confidence ?? 0.96)) * 100).toFixed(1)}%</td>
+                            <td className="px-3.5 py-2.5 text-slate-300">{Math.round(tr.altitude_m || 0)}m</td>
+                            <td className="px-3.5 py-2.5 text-slate-300">{Math.round(tr.speed_mps || 0)} m/s</td>
+                            <td className="px-3.5 py-2.5 text-slate-300">{Math.round(tr.heading_deg || 0)}°</td>
+                            <td className="px-3.5 py-2.5">
+                              <span className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md font-sans font-medium text-[10px]">
+                                {tr.fusion?.display_status || tr.fusion_status || 'CORRELATED'}
+                              </span>
+                            </td>
+                            <td className="px-3.5 py-2.5">
+                              <span className={`${
+                                (tr.risk?.level || tr.risk_level) === 'CRITICAL' || (tr.risk?.level || tr.risk_level) === 'HIGH'
+                                  ? 'bg-red-500/15 border-red-500/30 text-red-300'
+                                  : (tr.risk?.level || tr.risk_level) === 'MEDIUM'
+                                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                                  : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                              } border px-2 py-0.5 rounded-md font-sans font-medium text-[10px]`}>
+                                {tr.risk?.level || tr.risk_level || 'LOW'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -635,8 +690,10 @@ export default function AdminDashboardPage() {
             <PermissionsRegistryView
               drones={drones}
               permissions={permissions}
+              zones={zones}
               onApprovePermission={handleApprovePermission}
               onRejectPermission={handleRejectPermission}
+              onRequestPermission={handleRequestPermission}
             />
           )}
 
@@ -644,8 +701,10 @@ export default function AdminDashboardPage() {
             <PermissionsRegistryView
               drones={drones}
               permissions={permissions}
+              zones={zones}
               onApprovePermission={handleApprovePermission}
               onRejectPermission={handleRejectPermission}
+              onRequestPermission={handleRequestPermission}
             />
           )}
 
@@ -653,7 +712,7 @@ export default function AdminDashboardPage() {
             <RestrictedZonesView
               zones={zones}
               onCreateZone={handleCreateZone}
-              onImportGeoJSON={fetchAllData}
+              onImportGeoJSON={handleImportGeoJSON}
             />
           )}
 
