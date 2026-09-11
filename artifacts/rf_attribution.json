@@ -1,0 +1,22 @@
+{
+  "model": "baseline",
+  "sample_index": 2436,
+  "true_label": 0,
+  "predicted_probability": 0.9987,
+  "method": "temporal_window_occlusion_and_gradient_saliency",
+  "scientific_interpretation": "Attribution measures empirical sensitivity: peaks in occlusion score highlight temporal sub-bursts whose removal causes the largest drop in drone classification confidence.",
+  "top_critical_windows": [
+    {
+      "timestep_center": 52.0,
+      "importance_score": 0.9967
+    },
+    {
+      "timestep_center": 54.0,
+      "importance_score": 0.9952
+    },
+    {
+      "timestep_center": 58.0,
+      "importance_score": 0.9937
+    }
+  ]
+}
